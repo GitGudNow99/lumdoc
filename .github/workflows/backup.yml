@@ -1,0 +1,105 @@
+name: Backup Data
+
+on:
+  schedule:
+    # Run daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      backup_type:
+        description: 'Type of backup'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - incremental
+          - indexes-only
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install httpx aiofiles
+      
+      - name: Create backup directory
+        run: |
+          mkdir -p backups/$(date +%Y%m%d)
+      
+      - name: Backup Algolia Index
+        env:
+          ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+          ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
+        run: |
+          python scripts/backup_algolia.py
+      
+      - name: Backup Upstash Vector
+        env:
+          UPSTASH_VECTOR_REST_URL: ${{ secrets.UPSTASH_VECTOR_REST_URL }}
+          UPSTASH_VECTOR_REST_TOKEN: ${{ secrets.UPSTASH_VECTOR_REST_TOKEN }}
+        run: |
+          python scripts/backup_vector.py
+      
+      - name: Compress backup
+        run: |
+          tar -czf backup-$(date +%Y%m%d-%H%M%S).tar.gz backups/
+      
+      - name: Upload to GitHub Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-${{ github.run_id }}
+          path: backup-*.tar.gz
+          retention-days: 30
+      
+      - name: Upload to S3 (Optional)
+        if: env.AWS_ACCESS_KEY_ID != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+        run: |
+          aws s3 cp backup-*.tar.gz s3://your-backup-bucket/lumdoc/backups/
+      
+      - name: Clean old backups
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            
+            const oldArtifacts = artifacts.data.artifacts
+              .filter(a => a.name.startsWith('backup-'))
+              .filter(a => Date.now() - Date.parse(a.created_at) > 30 * 24 * 60 * 60 * 1000);
+            
+            for (const artifact of oldArtifacts) {
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id
+              });
+            }
+      
+      - name: Notify success
+        if: success()
+        run: |
+          echo "✅ Backup completed successfully"
+      
+      - name: Notify failure
+        if: failure()
+        run: |
+          echo "❌ Backup failed - check logs"

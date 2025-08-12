@@ -1,0 +1,74 @@
+name: Index Documentation
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'grandMA3 version to index'
+        required: false
+        default: '2.3'
+      max_pages:
+        description: 'Maximum pages to crawl'
+        required: false
+        default: '500'
+
+jobs:
+  crawl-and-index:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@latest
+      
+      - name: Install dependencies
+        run: |
+          pip install playwright beautifulsoup4 lxml openai httpx tenacity
+          playwright install chromium
+          playwright install-deps chromium
+      
+      - name: Run crawler
+        env:
+          MA3_VERSION: ${{ github.event.inputs.version || '2.3' }}
+          MAX_PAGES: ${{ github.event.inputs.max_pages || '500' }}
+        run: |
+          python scripts/crawl.py --version $MA3_VERSION --max-pages $MAX_PAGES
+      
+      - name: Process and index documents
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          UPSTASH_VECTOR_REST_URL: ${{ secrets.UPSTASH_VECTOR_REST_URL }}
+          UPSTASH_VECTOR_REST_TOKEN: ${{ secrets.UPSTASH_VECTOR_REST_TOKEN }}
+          ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+          ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
+          MA3_VERSION: ${{ github.event.inputs.version || '2.3' }}
+        run: |
+          python scripts/index.py --version $MA3_VERSION
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: crawl-data-${{ github.event.inputs.version || '2.3' }}
+          path: data/
+          retention-days: 7
+      
+      - name: Notify completion
+        if: success()
+        run: |
+          echo "✅ Successfully indexed grandMA3 v${{ github.event.inputs.version || '2.3' }} documentation"
+      
+      - name: Notify failure
+        if: failure()
+        run: |
+          echo "❌ Failed to index documentation"

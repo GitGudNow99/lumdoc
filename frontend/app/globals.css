@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* grandMA3 Dark Theme - Default */
+    --background: 0 0% 10%;  /* #1A1A1A - Dark background */
+    --foreground: 0 0% 90%;  /* Light gray text */
+    --card: 0 0% 13%;  /* #212121 - Slightly lighter than bg */
+    --card-foreground: 0 0% 90%;
+    --popover: 0 0% 15%;  /* #262626 */
+    --popover-foreground: 0 0% 90%;
+    --primary: 48 100% 50%;  /* #FFD100 - grandMA3 signature yellow */
+    --primary-foreground: 0 0% 0%;  /* Black text on yellow */
+    --secondary: 0 0% 20%;  /* #333333 - Dark gray */
+    --secondary-foreground: 48 100% 50%;  /* Yellow text */
+    --muted: 0 0% 25%;  /* #404040 */
+    --muted-foreground: 0 0% 60%;  /* #999999 */
+    --accent: 200 100% 40%;  /* #0099CC - Cyan accent */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 85% 50%;  /* #E62E2E - Red for errors */
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 25%;  /* #404040 - Subtle borders */
+    --input: 0 0% 18%;  /* #2D2D2D - Input backgrounds */
+    --ring: 48 100% 50%;  /* #FFD100 - Yellow focus ring */
+    --radius: 0.25rem;  /* Sharper corners like grandMA3 */
+  }
+
+  .light {
+    /* Light mode - less common in grandMA3 but available */
+    --background: 0 0% 95%;  /* #F2F2F2 */
+    --foreground: 0 0% 10%;  /* #1A1A1A */
+    --card: 0 0% 100%;  /* White */
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 48 100% 45%;  /* Slightly darker yellow for light mode */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 85%;  /* #D9D9D9 */
+    --secondary-foreground: 0 0% 10%;
+    --muted: 0 0% 90%;  /* #E6E6E6 */
+    --muted-foreground: 0 0% 40%;
+    --accent: 200 100% 35%;  /* Darker cyan for light mode */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 85% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 80%;  /* #CCCCCC */
+    --input: 0 0% 100%;
+    --ring: 48 100% 45%;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* grandMA3 styled components */
+  .ma3-panel {
+    @apply bg-card border border-border rounded-sm shadow-lg;
+  }
+  
+  .ma3-button {
+    @apply bg-secondary text-secondary-foreground px-4 py-2 rounded-sm border border-border hover:bg-ma3-gray-600 hover:border-ma3-yellow transition-colors font-medium;
+  }
+  
+  .ma3-button-primary {
+    @apply bg-ma3-yellow text-black px-4 py-2 rounded-sm hover:bg-yellow-400 transition-colors font-bold;
+  }
+  
+  .ma3-input {
+    @apply bg-input text-foreground border border-border rounded-sm px-3 py-2 focus:border-ma3-yellow focus:ring-1 focus:ring-ma3-yellow outline-none;
+  }
+  
+  .code-block {
+    @apply bg-ma3-black text-ma3-gray-200 p-4 rounded-sm overflow-x-auto border border-ma3-gray-700 font-mono;
+  }
+  
+  .citation {
+    @apply text-ma3-yellow hover:text-yellow-400 hover:underline cursor-pointer inline-flex items-center gap-1 transition-colors;
+  }
+  
+  .message-user {
+    @apply bg-ma3-surface rounded-sm p-4 ml-auto max-w-[80%] border border-ma3-gray-600;
+  }
+  
+  .message-assistant {
+    @apply bg-card rounded-sm p-4 max-w-[80%] border border-border;
+  }
+  
+  /* grandMA3 status indicators */
+  .ma3-status-active {
+    @apply bg-ma3-green text-black px-2 py-1 rounded-sm font-bold text-xs uppercase;
+  }
+  
+  .ma3-status-record {
+    @apply bg-ma3-red text-white px-2 py-1 rounded-sm font-bold text-xs uppercase animate-pulse;
+  }
+  
+  .ma3-status-info {
+    @apply bg-ma3-blue text-white px-2 py-1 rounded-sm font-bold text-xs uppercase;
+  }
+  
+  /* grandMA3 encoder style */
+  .ma3-encoder {
+    @apply w-12 h-12 rounded-full bg-ma3-gray-700 border-2 border-ma3-gray-500 hover:border-ma3-cyan transition-colors cursor-pointer;
+  }
+  
+  /* grandMA3 fader style */
+  .ma3-fader {
+    @apply bg-ma3-gray-700 rounded-sm;
+  }
+}

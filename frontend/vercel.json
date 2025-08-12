@@ -1,0 +1,17 @@
+{
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/search/route.ts": {
+      "maxDuration": 10
+    },
+    "app/api/answer/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/chat/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}

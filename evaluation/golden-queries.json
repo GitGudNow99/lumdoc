@@ -1,0 +1,149 @@
+{
+  "queries": [
+    {
+      "id": "cmd-001",
+      "category": "command_syntax",
+      "query": "Store command syntax",
+      "expected_keywords": ["Store", "[Object]", "[Destination]", "/merge", "/remove"],
+      "expected_citations": true,
+      "min_confidence": 0.8
+    },
+    {
+      "id": "cmd-002",
+      "category": "command_syntax",
+      "query": "How do I use MAtricks?",
+      "expected_keywords": ["MAtricks", "selection", "fixtures", "Next", "Prev"],
+      "expected_citations": true,
+      "min_confidence": 0.75
+    },
+    {
+      "id": "cmd-003",
+      "category": "command_syntax",
+      "query": "Delete cue syntax",
+      "expected_keywords": ["Delete", "Cue", "Sequence", "confirmation"],
+      "expected_citations": true,
+      "min_confidence": 0.8
+    },
+    {
+      "id": "workflow-001",
+      "category": "workflow",
+      "query": "How to create a phaser effect",
+      "expected_keywords": ["phaser", "effect", "steps", "values", "speed"],
+      "expected_citations": true,
+      "min_confidence": 0.7
+    },
+    {
+      "id": "workflow-002",
+      "category": "workflow",
+      "query": "Record a sequence with timecode",
+      "expected_keywords": ["timecode", "sequence", "record", "trigger", "clock"],
+      "expected_citations": true,
+      "min_confidence": 0.7
+    },
+    {
+      "id": "concept-001",
+      "category": "concept",
+      "query": "What is a preset?",
+      "expected_keywords": ["preset", "values", "store", "reference", "pool"],
+      "expected_citations": true,
+      "min_confidence": 0.75
+    },
+    {
+      "id": "concept-002",
+      "category": "concept",
+      "query": "Difference between Go and Goto",
+      "expected_keywords": ["Go", "Goto", "fade", "time", "immediate"],
+      "expected_citations": true,
+      "min_confidence": 0.8
+    },
+    {
+      "id": "hardware-001",
+      "category": "hardware",
+      "query": "grandMA3 onPC system requirements",
+      "expected_keywords": ["Windows", "macOS", "RAM", "processor", "graphics"],
+      "expected_citations": true,
+      "min_confidence": 0.8
+    },
+    {
+      "id": "network-001",
+      "category": "network",
+      "query": "Configure MA-Net3",
+      "expected_keywords": ["MA-Net3", "network", "session", "IP", "join"],
+      "expected_citations": true,
+      "min_confidence": 0.7
+    },
+    {
+      "id": "fixture-001",
+      "category": "fixture",
+      "query": "Patch fixtures in grandMA3",
+      "expected_keywords": ["patch", "fixture", "DMX", "address", "universe"],
+      "expected_citations": true,
+      "min_confidence": 0.75
+    },
+    {
+      "id": "edge-001",
+      "category": "edge_case",
+      "query": "IfOutput command",
+      "expected_keywords": ["IfOutput", "condition", "DMX", "value"],
+      "expected_citations": true,
+      "min_confidence": 0.6
+    },
+    {
+      "id": "edge-002",
+      "category": "edge_case",
+      "query": "Recipe in grandMA3",
+      "expected_keywords": ["recipe", "values", "preset", "combination"],
+      "expected_citations": true,
+      "min_confidence": 0.6
+    },
+    {
+      "id": "version-001",
+      "category": "version_specific",
+      "query": "New features in version 2.0",
+      "expected_keywords": ["2.0", "features", "update", "changes"],
+      "expected_citations": true,
+      "min_confidence": 0.5,
+      "version": "2.0"
+    },
+    {
+      "id": "negative-001",
+      "category": "negative",
+      "query": "How to make coffee",
+      "expected_keywords": [],
+      "expected_citations": false,
+      "should_refuse": true,
+      "min_confidence": 0.2
+    },
+    {
+      "id": "negative-002",
+      "category": "negative",
+      "query": "grandMA2 compatibility",
+      "expected_keywords": ["grandMA3", "not compatible", "different"],
+      "expected_citations": true,
+      "min_confidence": 0.4
+    }
+  ],
+  "evaluation_metrics": {
+    "citation_accuracy": {
+      "target": 0.85,
+      "description": "Percentage of queries with correct citations"
+    },
+    "keyword_coverage": {
+      "target": 0.8,
+      "description": "Percentage of expected keywords found in answer"
+    },
+    "confidence_threshold": {
+      "target": 0.7,
+      "description": "Average confidence score across all queries"
+    },
+    "refusal_accuracy": {
+      "target": 0.95,
+      "description": "Correctly refuses out-of-scope queries"
+    },
+    "response_time": {
+      "target_p50": 1000,
+      "target_p95": 3000,
+      "description": "Response time in milliseconds"
+    }
+  }
+}

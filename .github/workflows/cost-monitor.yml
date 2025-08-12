@@ -1,0 +1,73 @@
+name: Cost Monitoring
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+          
+      - name: Run cost monitor
+        run: |
+          cd frontend
+          npx tsx ../scripts/cost-monitor.ts
+        env:
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          COST_THRESHOLD_DAILY: '10'
+          COST_THRESHOLD_WEEKLY: '50'
+          COST_THRESHOLD_MONTHLY: '150'
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          
+      - name: Check thresholds
+        id: check
+        run: |
+          cd frontend
+          OUTPUT=$(npx tsx ../scripts/cost-monitor.ts 2>&1)
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -q "🚨"; then
+            echo "alert=true" >> $GITHUB_OUTPUT
+            echo "message=$OUTPUT" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Create issue if alert
+        if: steps.check.outputs.alert == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const message = `${{ steps.check.outputs.message }}`;
+            const title = '🚨 Cost Alert: Spending threshold exceeded';
+            
+            // Check if issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'cost-alert',
+            });
+            
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: message,
+                labels: ['cost-alert', 'urgent'],
+              });
+            }
