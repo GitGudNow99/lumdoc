@@ -85,43 +85,96 @@ class LightweightCrawler:
             
             # Wait for JavaScript content to load
             try:
-                # Wait for the main content area or navigation
-                await page.wait_for_selector('.topic-content, .nav-tree, .content-area, #content, .main', timeout=5000)
+                # Wait for the actual content frame/iframe if it exists
+                await page.wait_for_selector('iframe#content-frame, .topic-content, .nav-tree, #content, .main', timeout=5000)
             except:
                 pass
             
             # Always wait a bit for dynamic content
             await asyncio.sleep(3)
             
+            # Check if content is in an iframe
+            frames = page.frames
+            content_frame = None
+            for frame in frames:
+                if 'content' in frame.name or 'main' in frame.name:
+                    content_frame = frame
+                    break
+            
             # Try to trigger any lazy-loaded content
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
             await asyncio.sleep(1)
             
-            html = await page.content()
-            soup = BeautifulSoup(html, "lxml")
+            # Check for iframes and switch to content frame if exists
+            frames = page.frames
+            content_page = page
             
-            # Extract content
-            title = soup.find("title").text if soup.find("title") else ""
+            # Look for content iframe
+            for frame in frames:
+                try:
+                    frame_url = frame.url
+                    if 'content' in frame_url or len(frames) > 1:
+                        # This might be the content frame
+                        content_page = frame
+                        break
+                except:
+                    pass
             
-            content_elem = (
-                soup.find(class_="content-wrapper") or
-                soup.find("main") or
-                soup.find("article") or
-                soup.find(id="content") or
-                soup.find(class_="topic-content") or
-                soup.find(class_="main-content") or
-                soup.body
-            )
+            # Try to get content using JavaScript evaluation
+            try:
+                js_content = await content_page.evaluate("""
+                    () => {
+                        // Try multiple selectors for content
+                        const selectors = [
+                            '.topic-content',
+                            '.main-content', 
+                            '#content',
+                            'main',
+                            'article',
+                            '.content-wrapper',
+                            '[role="main"]',
+                            '.body-content',
+                            '.doc-content'
+                        ];
+                        
+                        for (const selector of selectors) {
+                            const elem = document.querySelector(selector);
+                            if (elem && elem.textContent.trim().length > 100) {
+                                return {
+                                    text: elem.textContent,
+                                    html: elem.innerHTML
+                                };
+                            }
+                        }
+                        
+                        // If no good content found, get the whole body
+                        return {
+                            text: document.body.textContent,
+                            html: document.body.innerHTML
+                        };
+                    }
+                """)
+                
+                if js_content and js_content.get('text', '').strip():
+                    text = self._clean_text(js_content['text'])
+                    html = js_content.get('html', '')
+                    soup = BeautifulSoup(html, "lxml")
+                else:
+                    html = await page.content()
+                    soup = BeautifulSoup(html, "lxml")
+                    text = self._clean_text(soup.get_text())
+            except:
+                html = await page.content()
+                soup = BeautifulSoup(html, "lxml")
+                text = self._clean_text(soup.get_text())
             
-            if not content_elem:
-                await page.close()
-                return None
+            # Extract title
+            title = await page.title() or ""
             
-            # Extract text and code
-            text = self._clean_text(content_elem.get_text())
+            # Extract code blocks from soup
             code_blocks = [
                 code.get_text(strip=True) 
-                for code in content_elem.find_all(["pre", "code"])
+                for code in soup.find_all(["pre", "code"])
                 if code.get_text(strip=True)
             ]
             
