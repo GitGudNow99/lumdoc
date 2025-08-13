@@ -1,1 +1,41 @@
+# Vercel
 .vercel
+
+# GitHub CLI
+gh_*
+gh.tar.gz
+gh.zip
+
+# Secret setup scripts (contain sensitive data)
+scripts/setup-github-secrets.sh
+scripts/add-github-secrets.sh
+
+# Environment files
+.env.local
+.env.production
+
+# Node modules
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Production
+build
+dist
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Testing
+coverage/
