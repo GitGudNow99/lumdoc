@@ -29,7 +29,10 @@ class LightweightCrawler:
         print(f"Starting crawl of grandMA3 v{self.version} docs...")
         
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await p.chromium.launch(
+                headless=True,
+                args=['--no-sandbox', '--disable-setuid-sandbox']  # Required for GitHub Actions
+            )
             context = await browser.new_context()
             
             # Start from help page (main table of contents)
@@ -46,8 +49,17 @@ class LightweightCrawler:
                     self.documents.append(page_data)
                     pages_crawled += 1
                     
+                    # Debug: Show how many links were found
+                    num_links = len(page_data.get("links", []))
+                    if num_links == 0:
+                        print(f"Warning: No links found on {url}")
+                    elif pages_crawled <= 3:
+                        print(f"Found {num_links} links on {url}")
+                    
                     if pages_crawled % 10 == 0:
                         print(f"Crawled {pages_crawled} pages...")
+                    elif pages_crawled <= 5:
+                        print(f"Crawled page {pages_crawled}: {url}")
                     
                     # Add new URLs to queue
                     for link in page_data.get("links", []):
@@ -55,13 +67,14 @@ class LightweightCrawler:
                             queue.append(link)
                 
                 # Rate limiting
-                await asyncio.sleep(0.3)
+                await asyncio.sleep(0.5)
             
             await browser.close()
             
         # Save all documents
         self._save_documents()
         print(f"Crawl complete. {pages_crawled} pages saved to {self.output_dir}")
+        print(f"Total unique URLs visited: {len(self.visited_urls)}")
     
     async def _crawl_page(self, context, url: str) -> Dict:
         self.visited_urls.add(url)
@@ -75,8 +88,14 @@ class LightweightCrawler:
                 # Wait for the main content area or navigation
                 await page.wait_for_selector('.topic-content, .nav-tree, .content-area, #content, .main', timeout=5000)
             except:
-                # If selectors not found, wait a bit anyway
-                await asyncio.sleep(2)
+                pass
+            
+            # Always wait a bit for dynamic content
+            await asyncio.sleep(3)
+            
+            # Try to trigger any lazy-loaded content
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(1)
             
             html = await page.content()
             soup = BeautifulSoup(html, "lxml")
@@ -120,9 +139,17 @@ class LightweightCrawler:
                 js_links = await page.evaluate("""
                     () => {
                         const links = [];
+                        // Get all anchor tags
                         document.querySelectorAll('a[href]').forEach(a => {
                             if (a.href && a.href.includes('.html')) {
                                 links.push(a.href);
+                            }
+                        });
+                        // Also check for dynamically loaded navigation items
+                        document.querySelectorAll('[onclick*=".html"]').forEach(el => {
+                            const match = el.getAttribute('onclick').match(/['"]([^'"]*\.html)['"]/);
+                            if (match) {
+                                links.push(new URL(match[1], window.location.href).href);
                             }
                         });
                         return links;
@@ -131,8 +158,8 @@ class LightweightCrawler:
                 for link in js_links:
                     if self._is_same_host(link, self.base_url):
                         links.append(link.split("#")[0])
-            except:
-                pass
+            except Exception as e:
+                print(f"Error extracting JS links: {e}")
             
             await page.close()
             
